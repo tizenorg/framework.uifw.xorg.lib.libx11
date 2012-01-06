@@ -1,0 +1,36 @@
+=== modified file 'nls/compose.dir.pre'
+--- libx11-1.2.1/nls/compose.dir.pre	2009-12-04 11:43:54 +0000
++++ libx11-1.2.1/nls/compose.dir.pre	2010-02-03 01:35:30 +0000
+@@ -403,6 +403,7 @@
+ en_US.UTF-8/Compose:		tg_TJ.UTF-8
+ en_US.UTF-8/Compose:		th_TH.UTF-8
+ en_US.UTF-8/Compose:		tl_PH.UTF-8
++en_US.UTF-8/Compose:		tlh_GB.UTF-8
+ en_US.UTF-8/Compose:		tn_ZA.UTF-8
+ en_US.UTF-8/Compose:		tr_TR.UTF-8
+ en_US.UTF-8/Compose:		ts_ZA.UTF-8
+
+=== modified file 'nls/locale.alias.pre'
+--- libx11-1.2.1/nls/locale.alias.pre	2009-12-04 11:43:54 +0000
++++ libx11-1.2.1/nls/locale.alias.pre	2010-02-03 01:36:13 +0000
+@@ -1080,6 +1080,7 @@
+ tl_PH:						tl_PH.ISO8859-1
+ tl_PH.iso88591:					tl_PH.ISO8859-1
+ tl_PH.ISO-8859-1:				tl_PH.ISO8859-1
++tlh_GB.utf8:					tlh_GB.UTF-8
+ tn:						tn_ZA.ISO8859-15
+ tn_ZA:					tn_ZA.ISO8859-15
+ tn_ZA.iso8859-15:		tn_ZA.ISO8859-15
+
+=== modified file 'nls/locale.dir.pre'
+--- libx11-1.2.1/nls/locale.dir.pre	2009-12-04 11:43:54 +0000
++++ libx11-1.2.1/nls/locale.dir.pre	2010-02-03 01:36:56 +0000
+@@ -429,6 +429,7 @@
+ en_US.UTF-8/XLC_LOCALE:			ti_ER.UTF-8
+ en_US.UTF-8/XLC_LOCALE:			ti_ET.UTF-8
+ en_US.UTF-8/XLC_LOCALE:			tl_PH.UTF-8
++en_US.UTF-8/XLC_LOCALE:			tlh_GB.UTF-8
+ en_US.UTF-8/XLC_LOCALE:			tn_ZA.UTF-8
+ en_US.UTF-8/XLC_LOCALE:			tr_TR.UTF-8
+ en_US.UTF-8/XLC_LOCALE:			ts_ZA.UTF-8
+
