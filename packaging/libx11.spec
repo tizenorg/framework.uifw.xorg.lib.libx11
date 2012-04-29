@@ -1,7 +1,7 @@
-Name:       libX11
+Name:       libx11
 Summary:    X11 runtime library
 Version:    1.4.0
-Release:    0
+Release:    1.6
 Group:      System/Libraries
 License:    MIT
 URL:        http://www.x.org/
