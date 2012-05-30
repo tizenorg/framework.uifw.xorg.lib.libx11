@@ -6,6 +6,7 @@ Group:      System/Libraries
 License:    MIT
 URL:        http://www.x.org/
 Source0:    http://xorg.freedesktop.org/archive/individual/lib/%{name}-%{version}.tar.gz
+Source1001: packaging/libx11.manifest 
 Patch1:     003_recognize_glibc_2.3.2_locale_names.diff
 Patch2:     006_tailor_pt_BR.UTF-8_Compose.diff
 Patch3:     007_iso8859-15_Compose_fix.diff
@@ -70,6 +71,7 @@ Description: %{summary}
 
 
 %build
+cp %{SOURCE1001} .
 
 %reconfigure --enable-specs \
 	--enable-man-pages=3 \
@@ -94,6 +96,7 @@ rm -rf %{buildroot}
 
 
 %files
+%manifest libx11.manifest
 %dir %{_datadir}/X11
 %{_datadir}/X11/locale/*
 %{_datadir}/X11/XErrorDB
@@ -104,6 +107,7 @@ rm -rf %{buildroot}
 
 
 %files devel
+%manifest libx11.manifest
 %dir %{_includedir}/X11
 %{_includedir}/X11/ImUtil.h
 %{_includedir}/X11/XKBlib.h
