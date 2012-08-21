@@ -50,14 +50,13 @@ XExtCodes *XInitExtension (
 
 	LockDisplay (dpy);
 	if (! (ext = (_XExtension *) Xcalloc (1, sizeof (_XExtension))) ||
-	    ! (ext->name = Xmalloc((unsigned) strlen(name) + 1))) {
+	    ! (ext->name = strdup(name))) {
 	    if (ext) Xfree((char *) ext);
 	    UnlockDisplay(dpy);
 	    return (XExtCodes *) NULL;
 	}
 	codes.extension = dpy->ext_number++;
 	ext->codes = codes;
-	(void) strcpy(ext->name, name);
 
 	/* chain it onto the display list */
 	ext->next = dpy->ext_procs;
@@ -293,28 +292,6 @@ CopyEventCookieType XESetCopyEventCookie(
 	return (CopyEventCookieType)oldproc;
 }
 
-#ifdef _F_ENABLE_XI2_SENDEVENT_
-typedef Bool (*EventCookieToWireType) (
-    Display*	/* display */,
-    XGenericEventCookie*	/* re */,
-    xGenericEvent**	/* event */
-);
-
-EventCookieToWireType XESetEventCookieToWire(
-    Display *dpy,       /* display */
-    int extension,      /* extension major opcode */
-    EventCookieToWireType proc /* routine to call for generic events */
-    )
-{
-	EventCookieToWireType oldproc;
-	if (proc == NULL) proc = (EventCookieToWireType)_XUnknownEventCookie;
-	LockDisplay (dpy);
-	oldproc = dpy->generic_wire_vec[extension & 0x7F];
-	dpy->generic_wire_vec[extension & 0x7F] = proc;
-	UnlockDisplay (dpy);
-	return (EventCookieToWireType)oldproc;
-}
-#endif//_F_ENABLE_XI2_SENDEVENT_
 
 typedef Status (*EventToWireType) (
     Display*	/* display */,

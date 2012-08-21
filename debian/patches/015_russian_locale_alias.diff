@@ -4,10 +4,10 @@ This aligns with the glibc definition in /usr/share/locale/locale.alias.
 This only applies to Debian's glibc, see bug #62586 and glibc 2.2.5-4.
 
 For the same glib reason, we cannot change ru and ru_RU away from ISO8859-5,
-since that encoding is enshrined in /usr/share/i18n/locales/ru_RU.  Insert 
+since that encoding is enshrined in /usr/share/i18n/locales/ru_RU.  Insert
 appropriate perjorative language here.
 
-Suggestion: can the russian default be changed to UTF-8 instead of KOI8-R?  
+Suggestion: can the russian default be changed to UTF-8 instead of KOI8-R?
 This will make it easier for russians to fit in with the rest of the world.
 
 Index: libx11/nls/locale.alias.pre

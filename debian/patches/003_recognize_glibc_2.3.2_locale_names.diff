@@ -533,7 +533,7 @@ Index: libx11/nls/locale.dir.pre
 +++ libx11/nls/locale.dir.pre
 @@ -6,8 +6,13 @@
  XCOMM
- 
+
  C/XLC_LOCALE:				C
 +XCOMM a3 is not an ISO 639 language code, but in Cyrillic, "Z" looks like "3".
 +koi8-c/XLC_LOCALE:			a3_AZ.KOI8-C

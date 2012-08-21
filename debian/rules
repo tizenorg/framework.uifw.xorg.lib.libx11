@@ -14,7 +14,7 @@ include debian/xsfbs/xsfbs.mk
 CFLAGS = -Wall -g
 
 # slp2 feature list
-# TODO : build error occured 
+# TODO : build error occured
 CFLAGS += -D_F_ENABLE_XI2_SENDEVENT_
 
 LDFLAGS += -Wl,--hash-style=both -Wl,--as-needed

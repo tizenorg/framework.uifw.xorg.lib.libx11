@@ -27,9 +27,6 @@ in this Software without prior written authorization from The Open Group.
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef _F_ENABLE_XI2_SENDEVENT_
-#include <X11/extensions/geproto.h>
-#endif//_F_ENABLE_XI2_SENDEVENT_
 #include "Xlibint.h"
 
 /*
@@ -44,101 +41,6 @@ XSendEvent(
     long event_mask,
     XEvent *event)
 {
-#ifdef _F_ENABLE_XI2_SENDEVENT_
-    Status status;
-
-    LockDisplay (dpy);
-
-    /* call through display to find proper conversion routine */
-
-    if (event->type == GenericEvent) {
-        static Bool ext_initialized = False;
-        static _XExtension *ext = NULL;
-        XGenericEventCookie *xcookie = (XGenericEventCookie *) event;
-        xGenericEvent *ev = NULL;
-        register Status (**fp)(
-            Display *            /* dpy */,
-            XGenericEventCookie* /* re */,
-            xGenericEvent **     /* event */);
-
-        if (!ext_initialized) {
-            for (ext = dpy->ext_procs; ext; ext = ext->next) {
-                if (ext->name && strcmp (ext->name, GE_NAME) == 0)
-                    break;
-            }
-
-            ext_initialized = True;
-        }
-
-        /* No XGE */
-        if (!ext)
-            return BadRequest;
-
-        fp = &dpy->generic_wire_vec[xcookie->extension & 0x7F];
-
-        if (!fp || !*fp)
-            return BadRequest;
-
-        status = (**fp)(dpy, xcookie, &ev);
-
-        if (status && ev) {
-            register xGESendEventReq *req;
-            register long len;
-
-            GetReq (GESendEvent, req);
-
-            req->reqType = ext->codes.major_opcode;
-            req->ReqType = X_GESendEvent;
-            req->destination = w;
-            req->propagate = propagate;
-            req->eventMask = event_mask;
-
-            len = ev->length;
-            len += SIZEOF (xEvent) >> 2;
-
-            if (dpy->bigreq_size || req->length + len <= (unsigned) 65535) {
-                SetReqLen(req, len, len);
-                Data (dpy, (char *)ev, len << 2);
-            } else {
-                XFree(ev);
-                return BadLength;
-            }
-        }
-
-        if (ev)
-            XFree(ev);
-    } else {
-        xEvent ev;
-        register Status (**fp)(
-            Display *       /* dpy */,
-            XEvent *        /* re */,
-            xEvent *        /* event */);
-
-        /* initialize all of the event's fields first, before setting
-         * the meaningful ones later.
-         */
-        memset (&ev, 0, sizeof (ev));
-
-        fp = &dpy->wire_vec[event->type & 0177];
-        if (*fp == NULL) *fp = _XEventToWire;
-        status = (**fp)(dpy, event, &ev);
-
-        if (status) {
-            register xSendEventReq *req;
-
-            GetReq(SendEvent, req);
-            req->destination = w;
-            req->propagate = propagate;
-            req->eventMask = event_mask;
-#ifdef WORD64
-            /* avoid quad-alignment problems */
-            memcpy ((char *) req->eventdata, (char *) &ev, SIZEOF(xEvent));
-#else
-            req->event = ev;
-#endif /* WORD64 */
-        }
-    }
-#else//_F_ENABLE_XI2_SENDEVENT_
     register xSendEventReq *req;
     xEvent ev;
     register Status (**fp)(
@@ -172,7 +74,6 @@ XSendEvent(
 	req->event = ev;
 #endif /* WORD64 */
     }
-#endif//_F_ENABLE_XI2_SENDEVENT_
 
     UnlockDisplay(dpy);
     SyncHandle();
