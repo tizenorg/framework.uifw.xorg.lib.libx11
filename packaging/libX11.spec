@@ -23,7 +23,6 @@ BuildRequires:  libxcb-devel >= 1.2
 BuildRequires:  pkgconfig(xau) pkgconfig(xdmcp)
 BuildRequires:  perl(Pod::Simple)
 BuildRequires:	perl(Pod::Escapes)
-Requires:       perl
 Requires: %{name}-common = %{version}-%{release}
 Provides: libx11
 
