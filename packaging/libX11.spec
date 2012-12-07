@@ -17,11 +17,13 @@ BuildRequires:  pkgconfig(kbproto)
 BuildRequires:  pkgconfig(inputproto)
 BuildRequires:  pkgconfig(xorg-macros)
 BuildRequires:  pkgconfig(xextproto)
-BuildRequires: pkgconfig(xproto) >= 7.0.15
-BuildRequires: xorg-x11-xtrans-devel >= 1.0.3-4
-BuildRequires: libxcb-devel >= 1.2
-BuildRequires: pkgconfig(xau) pkgconfig(xdmcp)
-
+BuildRequires:  pkgconfig(xproto) >= 7.0.15
+BuildRequires:  xorg-x11-xtrans-devel >= 1.0.3-4
+BuildRequires:  libxcb-devel >= 1.2
+BuildRequires:  pkgconfig(xau) pkgconfig(xdmcp)
+BuildRequires:  perl(Pod::Simple)
+BuildRequires:	perl(Pod::Escapes)
+Requires:       perl
 Requires: %{name}-common = %{version}-%{release}
 Provides: libx11
 
