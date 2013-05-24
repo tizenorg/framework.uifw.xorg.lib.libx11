@@ -56,7 +56,7 @@ autoreconf -v --install --force
            --enable-specs \
            --enable-man-pages=3 \
            --with-xcb=yes \
-           CFLAGS="${CFLAGS} " \
+           CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL " \
            LDFLAGS="${LDFLAGS} -Wl,--hash-style=both -Wl,--as-needed"
 
 make %{?jobs:-j%jobs}

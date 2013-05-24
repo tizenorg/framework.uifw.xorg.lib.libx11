@@ -253,7 +253,11 @@ static xcb_generic_reply_t *poll_for_event(Display *dpy)
 	assert(dpy->xcb->event_owner == XlibOwnsEventQueue && !dpy->xcb->event_waiter);
 
 	if(!dpy->xcb->next_event)
+#ifdef _F_REDUCE_SYSCALL
+		dpy->xcb->next_event = xcb_poll_for_queued_event(dpy->xcb->connection);
+#else
 		dpy->xcb->next_event = xcb_poll_for_event(dpy->xcb->connection);
+#endif
 
 	if(dpy->xcb->next_event)
 	{
@@ -359,6 +363,11 @@ int _XEventsQueued(Display *dpy, int mode)
 	 * can reasonably claim there are no new events right now. */
 	if(!dpy->xcb->event_waiter)
 	{
+#ifdef _F_REDUCE_SYSCALL
+		if(!dpy->xcb->next_event)
+			dpy->xcb->next_event = xcb_poll_for_event(dpy->xcb->connection);
+#endif
+
 		while((response = poll_for_response(dpy)))
 			handle_response(dpy, response, False);
 		if(xcb_connection_has_error(dpy->xcb->connection))
