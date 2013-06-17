@@ -4,7 +4,7 @@
 Summary: Core X11 protocol client library
 Name: libX11
 Version: 1.5.0
-Release: 2
+Release: 3
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.x.org
