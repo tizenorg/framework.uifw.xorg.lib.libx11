@@ -4,8 +4,7 @@
 Summary: Core X11 protocol client library
 Name: libX11
 Version: 1.5.0
-Release: 3
-VCS:     framework/uifw/xorg/lib/libx11#REBASE-7-g234d56c50c5d38bc7d55b573fb94ec4d84ed4b3d
+Release: 5
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.x.org
@@ -56,7 +55,7 @@ autoreconf -v --install --force
            --enable-specs \
            --enable-man-pages=3 \
            --with-xcb=yes \
-           CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL " \
+           CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL -D_FIX_MEM_LEAK_" \
            LDFLAGS="${LDFLAGS} -Wl,--hash-style=both -Wl,--as-needed"
 
 make %{?jobs:-j%jobs}
@@ -66,7 +65,6 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p %{buildroot}/usr/share/license
 cp -af COPYING %{buildroot}/usr/share/license/%{name}
 cp -af COPYING %{buildroot}/usr/share/license/%{name}-common
-cp -af COPYING %{buildroot}/usr/share/license/%{name}-devel
 make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 
 # We intentionally don't ship *.la files
@@ -121,4 +119,3 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/x11-xcb.pc
 #%{_mandir}/man3/*.3*
 #%{_mandir}/man5/*.5*
-/usr/share/license/%{name}-devel
