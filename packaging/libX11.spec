@@ -4,7 +4,7 @@
 Summary: Core X11 protocol client library
 Name: libX11
 Version: 1.5.0
-Release: 2
+Release: 5
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.x.org
@@ -17,12 +17,10 @@ BuildRequires:  pkgconfig(kbproto)
 BuildRequires:  pkgconfig(inputproto)
 BuildRequires:  pkgconfig(xorg-macros)
 BuildRequires:  pkgconfig(xextproto)
-BuildRequires:  pkgconfig(xproto) >= 7.0.15
-BuildRequires:  xorg-x11-xtrans-devel >= 1.0.3-4
-BuildRequires:  libxcb-devel >= 1.2
-BuildRequires:  pkgconfig(xau) pkgconfig(xdmcp)
-BuildRequires:  perl(Pod::Simple)
-BuildRequires:	perl(Pod::Escapes)
+BuildRequires: pkgconfig(xproto) >= 7.0.15
+BuildRequires: xorg-x11-xtrans-devel >= 1.0.3-4
+BuildRequires: libxcb-devel >= 1.2
+
 Requires: %{name}-common = %{version}-%{release}
 Provides: libx11
 
@@ -57,14 +55,16 @@ autoreconf -v --install --force
            --enable-specs \
            --enable-man-pages=3 \
            --with-xcb=yes \
-           CFLAGS="${CFLAGS} " \
+           CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL -D_FIX_MEM_LEAK_" \
            LDFLAGS="${LDFLAGS} -Wl,--hash-style=both -Wl,--as-needed"
 
 make %{?jobs:-j%jobs}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-
+mkdir -p %{buildroot}/usr/share/license
+cp -af COPYING %{buildroot}/usr/share/license/%{name}
+cp -af COPYING %{buildroot}/usr/share/license/%{name}-common
 make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 
 # We intentionally don't ship *.la files
@@ -86,6 +86,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
+/usr/share/license/%{name}
 %{_libdir}/libX11.so.6
 %{_libdir}/libX11.so.6.3.0
 %{_libdir}/libX11-xcb.so.1
@@ -93,7 +94,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common
 %defattr(-,root,root,-)
-%doc AUTHORS COPYING README NEWS
+/usr/share/license/%{name}-common
+#%doc AUTHORS COPYING README NEWS
 %{_datadir}/X11/locale/*
 %{_datadir}/X11/XErrorDB
 

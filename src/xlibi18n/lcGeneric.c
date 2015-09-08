@@ -1000,8 +1000,13 @@ initialize(XLCd lcd)
 
     XLC_PUBLIC_METHODS(lcd)->superclass = superclass;
 
+#ifdef _FIX_MEM_LEAK_
+    //BUGFIX: Memory leak
+    lcd->methods->close = destroy;
+#endif
+
     if (superclass->pub.initialize) {
-	if ((*superclass->pub.initialize)(lcd) == False)
+        if ((*superclass->pub.initialize)(lcd) == False)
 	    return False;
     }
 
