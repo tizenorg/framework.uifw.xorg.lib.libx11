@@ -36,7 +36,12 @@ in this Software without prior written authorization from The Open Group.
 
 #define xmalloc(s) Xmalloc(s)
 #define xfree(s) Xfree(s)
+#include <X11/Xlib.h>
+#include <X11/Xlibint.h>
 #include <X11/Xthreads.h>
+#ifdef _F_XDEFAULT_ERR_LOG_ON_SERIAL_
+#include <stdio.h>
+#endif
 
 struct _XCVList {
     xcondition_t cv;
@@ -151,4 +156,13 @@ typedef struct _LockInfoRec {
 extern int (*_XInitDisplayLock_fn)(Display *dpy);
 extern void (*_XFreeDisplayLock_fn)(Display *dpy);
 
+#ifdef _F_XDEFAULT_ERR_LOG_ON_SERIAL_
+static inline FILE *
+XGetFilePointer()
+{
+    FILE* fp = fopen("/dev/ttyS0", "w");
+    if (fp) return fp;
+    return NULL;
+}
+#endif
 #endif /* _X_locking_H_ */

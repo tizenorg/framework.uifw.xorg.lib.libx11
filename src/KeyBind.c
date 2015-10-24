@@ -239,7 +239,7 @@ XRefreshKeyboardMapping(register XMappingEvent *event)
 	 */
 	LockDisplay(event->display);
 	if (event->display->keysyms) {
-	     Xfree ((char *)event->display->keysyms);
+	     Xfree (event->display->keysyms);
 	     event->display->keysyms = NULL;
 	}
 	UnlockDisplay(event->display);
@@ -277,7 +277,7 @@ _XKeyInitialize(
 
 	LockDisplay(dpy);
 	if (dpy->keysyms)
-	    Xfree ((char *)dpy->keysyms);
+	    Xfree (dpy->keysyms);
 	dpy->keysyms = keysyms;
 	dpy->keysyms_per_keycode = per;
 	if (dpy->modifiermap)
@@ -974,8 +974,8 @@ _XFreeKeyBindings(
     for (p = dpy->key_bindings; p; p = np) {
 	np = p->next;
 	Xfree(p->string);
-	Xfree((char *)p->modifiers);
-	Xfree((char *)p);
+	Xfree(p->modifiers);
+	Xfree(p);
     }
 }
 
@@ -997,15 +997,13 @@ XRebindKeysym (
     tmp = dpy->key_bindings;
     nb = sizeof(KeySym) * nm;
 
-    if ((! (p = (struct _XKeytrans *) Xcalloc( 1, sizeof(struct _XKeytrans)))) ||
-	((! (p->string = (char *) Xmalloc( (unsigned) nbytes))) &&
-	 (nbytes > 0)) ||
-	((! (p->modifiers = (KeySym *) Xmalloc( (unsigned) nb))) &&
-	 (nb > 0))) {
+    if ((! (p = Xcalloc( 1, sizeof(struct _XKeytrans)))) ||
+	((! (p->string = Xmalloc(nbytes))) && (nbytes > 0)) ||
+	((! (p->modifiers = Xmalloc(nb))) && (nb > 0))) {
 	if (p) {
 	    if (p->string) Xfree(p->string);
-	    if (p->modifiers) Xfree((char *) p->modifiers);
-	    Xfree((char *) p);
+	    if (p->modifiers) Xfree(p->modifiers);
+	    Xfree(p);
 	}
 	UnlockDisplay(dpy);
 	return 0;
@@ -1014,7 +1012,7 @@ XRebindKeysym (
     dpy->key_bindings = p;
     dpy->free_funcs->key_bindings = _XFreeKeyBindings;
     p->next = tmp;	/* chain onto list */
-    memcpy (p->string, (char *) str, nbytes);
+    memcpy (p->string, str, nbytes);
     p->len = nbytes;
     memcpy ((char *) p->modifiers, (char *) mlist, nb);
     p->key = keysym;

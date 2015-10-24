@@ -41,6 +41,8 @@ OR PERFORMANCE OF THIS SOFTWARE.
 #include "Ximint.h"
 #include <sys/stat.h>
 #include <stdio.h>
+#include <limits.h>
+#include "pathmax.h"
 
 #define XLC_BUFSIZE 256
 
@@ -55,6 +57,8 @@ extern int _Xmbstoutf8(
     const char	*str,
     int		len
 );
+
+static void parsestringfile(FILE *fp, Xim im, int depth);
 
 /*
  *	Parsing File Format:
@@ -304,9 +308,9 @@ static char*
 TransFileName(Xim im, char *name)
 {
    char *home = NULL, *lcCompose = NULL;
-   char dir[XLC_BUFSIZE];
-   char *i = name, *ret, *j;
-   int l = 0;
+   char dir[XLC_BUFSIZE] = "";
+   char *i = name, *ret = NULL, *j;
+   size_t l = 0;
 
    while (*i) {
       if (*i == '%') {
@@ -316,30 +320,51 @@ TransFileName(Xim im, char *name)
                  l++;
    	         break;
    	      case 'H':
-   	         home = getenv("HOME");
-   	         if (home)
-                     l += strlen(home);
+                 if (home == NULL)
+                     home = getenv("HOME");
+                 if (home) {
+                     size_t Hsize = strlen(home);
+                     if (Hsize > PATH_MAX)
+                         /* your home directory length is ridiculous */
+                         goto end;
+                     l += Hsize;
+                 }
    	         break;
    	      case 'L':
                  if (lcCompose == NULL)
                      lcCompose = _XlcFileName(im->core.lcd, COMPOSE_FILE);
-                 if (lcCompose)
-                     l += strlen(lcCompose);
+                 if (lcCompose) {
+                     size_t Lsize = strlen(lcCompose);
+                     if (Lsize > PATH_MAX)
+                         /* your compose pathname length is ridiculous */
+                         goto end;
+                     l += Lsize;
+                 }
    	         break;
    	      case 'S':
-                 xlocaledir(dir, XLC_BUFSIZE);
-                 l += strlen(dir);
+                 if (dir[0] == '\0')
+                     xlocaledir(dir, XLC_BUFSIZE);
+                 if (dir[0]) {
+                     size_t Ssize = strlen(dir);
+                     if (Ssize > PATH_MAX)
+                         /* your locale directory path length is ridiculous */
+                         goto end;
+                     l += Ssize;
+                 }
    	         break;
    	  }
       } else {
       	  l++;
       }
       i++;
+      if (l > PATH_MAX)
+          /* your expanded path length is ridiculous */
+          goto end;
    }
 
    j = ret = Xmalloc(l+1);
    if (ret == NULL)
-      return ret;
+      goto end;
    i = name;
    while (*i) {
       if (*i == '%') {
@@ -371,6 +396,7 @@ TransFileName(Xim im, char *name)
       }
    }
    *j = '\0';
+end:
    Xfree(lcCompose);
    return ret;
 }
@@ -423,7 +449,8 @@ static int
 parseline(
     FILE *fp,
     Xim   im,
-    char* tokenbuf)
+    char* tokenbuf,
+    int   depth)
 {
     int token;
     DTModifier modifier_mask;
@@ -470,11 +497,13 @@ parseline(
                 goto error;
             if ((filename = TransFileName(im, tokenbuf)) == NULL)
                 goto error;
+            if (++depth > 100)
+                goto error;
             infp = _XFopenFile(filename, "r");
                 Xfree(filename);
             if (infp == NULL)
                 goto error;
-            _XimParseStringFile(infp, im);
+            parsestringfile(infp, im, depth);
             fclose(infp);
             return (0);
 	} else if ((token == KEY) && (strcmp("None", tokenbuf) == 0)) {
@@ -545,9 +574,12 @@ parseline(
     if (token == STRING) {
 	l = strlen(tokenbuf) + 1;
 	while (b->mbused + l > b->mbsize) {
-	    b->mbsize = b->mbsize ? b->mbsize * 1.5 : 1024;
-	    if (! (b->mb = Xrealloc (b->mb, b->mbsize)) )
+	    DTCharIndex newsize = b->mbsize ? b->mbsize * 1.5 : 1024;
+	    char *newmb = Xrealloc (b->mb, newsize);
+	    if (newmb == NULL)
 		goto error;
+	    b->mb = newmb;
+	    b->mbsize = newsize;
 	}
 	rhs_string_mb = &b->mb[b->mbused];
 	b->mbused    += l;
@@ -575,9 +607,12 @@ parseline(
 
         l = get_mb_string(im, local_mb_buf, rhs_keysym);
 	while (b->mbused + l + 1 > b->mbsize) {
-	    b->mbsize = b->mbsize ? b->mbsize * 1.5 : 1024;
-	    if (! (b->mb = Xrealloc (b->mb, b->mbsize)) )
+	    DTCharIndex newsize = b->mbsize ? b->mbsize * 1.5 : 1024;
+	    char *newmb = Xrealloc (b->mb, newsize);
+	    if (newmb == NULL)
 		goto error;
+	    b->mb = newmb;
+	    b->mbsize = newsize;
 	}
 	rhs_string_mb = &b->mb[b->mbused];
 	b->mbused    += l + 1;
@@ -592,9 +627,12 @@ parseline(
 	local_wc_buf[l] = (wchar_t)'\0';
     }
     while (b->wcused + l + 1 > b->wcsize) {
-	b->wcsize = b->wcsize ? b->wcsize * 1.5 : 512;
-	if (! (b->wc = Xrealloc (b->wc, sizeof(wchar_t) * b->wcsize)) )
+	DTCharIndex newsize = b->wcsize ? b->wcsize * 1.5 : 512;
+	wchar_t *newwc = Xrealloc (b->wc, sizeof(wchar_t) * newsize);
+	if (newwc == NULL)
 	    goto error;
+	b->wc = newwc;
+	b->wcsize = newsize;
     }
     rhs_string_wc = &b->wc[b->wcused];
     b->wcused    += l + 1;
@@ -605,9 +643,12 @@ parseline(
 	local_utf8_buf[l] = '\0';
     }
     while (b->utf8used + l + 1 > b->utf8size) {
-	b->utf8size = b->utf8size ? b->utf8size * 1.5 : 1024;
-	if (! (b->utf8 = Xrealloc (b->utf8, b->utf8size)) )
+	DTCharIndex newsize = b->utf8size ? b->utf8size * 1.5 : 1024;
+	char *newutf8 = Xrealloc (b->utf8, newsize);
+	if (newutf8 == NULL)
 	    goto error;
+	b->utf8 = newutf8;
+	b->utf8size = newsize;
     }
     rhs_string_utf8 = &b->utf8[b->utf8used];
     b->utf8used    += l + 1;
@@ -628,9 +669,12 @@ parseline(
 	    while (b->treeused >= b->treesize) {
 		DefTree *old     = b->tree;
 		int      oldsize = b->treesize;
-		b->treesize = b->treesize ? b->treesize * 1.5 : 256;
-		if (! (b->tree = Xrealloc (b->tree, sizeof(DefTree) * b->treesize)) )
+		int      newsize = b->treesize ? b->treesize * 1.5 : 256;
+		DefTree *new     = Xrealloc (b->tree, sizeof(DefTree) * newsize);
+		if (new == NULL)
 		    goto error;
+		b->tree = new;
+		b->treesize = newsize;
 		if (top >= (DTIndex *) old && top < (DTIndex *) &old[oldsize])
 		    top = (DTIndex *) (((char *) top) + (((char *)b->tree)-(char *)old));
 	    }
@@ -668,17 +712,28 @@ _XimParseStringFile(
     FILE *fp,
     Xim   im)
 {
+    parsestringfile(fp, im, 0);
+}
+
+static void
+parsestringfile(
+    FILE *fp,
+    Xim   im,
+    int   depth)
+{
     char tb[8192];
     char* tbp;
     struct stat st;
 
     if (fstat (fileno (fp), &st) != -1) {
 	unsigned long size = (unsigned long) st.st_size;
+	if (st.st_size >= INT_MAX)
+	    return;
 	if (size <= sizeof tb) tbp = tb;
 	else tbp = malloc (size);
 
 	if (tbp != NULL) {
-	    while (parseline(fp, im, tbp) >= 0) {}
+	    while (parseline(fp, im, tbp, depth) >= 0) {}
 	    if (tbp != tb) free (tbp);
 	}
     }

@@ -28,6 +28,7 @@ in this Software without prior written authorization from The Open Group.
 #include <config.h>
 #endif
 #include "Xlibint.h"
+#include <limits.h>
 
 XModifierKeymap *
 XGetModifierMapping(register Display *dpy)
@@ -41,13 +42,17 @@ XGetModifierMapping(register Display *dpy)
     GetEmptyReq(GetModifierMapping, req);
     (void) _XReply (dpy, (xReply *)&rep, 0, xFalse);
 
-    nbytes = (unsigned long)rep.length << 2;
-    res = (XModifierKeymap *) Xmalloc(sizeof (XModifierKeymap));
-    if (res) res->modifiermap = (KeyCode *) Xmalloc ((unsigned) nbytes);
+    if (rep.length < (INT_MAX >> 2)) {
+	nbytes = (unsigned long)rep.length << 2;
+	res = Xmalloc(sizeof (XModifierKeymap));
+	if (res)
+	    res->modifiermap = Xmalloc (nbytes);
+    } else
+	res = NULL;
     if ((! res) || (! res->modifiermap)) {
-	if (res) Xfree((char *) res);
+	if (res) Xfree(res);
 	res = (XModifierKeymap *) NULL;
-	_XEatData(dpy, nbytes);
+	_XEatDataWords(dpy, rep.length);
     } else {
 	_XReadPad(dpy, (char *) res->modifiermap, (long) nbytes);
 	res->max_keypermod = rep.numKeyPerModifier;
@@ -60,9 +65,9 @@ XGetModifierMapping(register Display *dpy)
 
 /*
  *	Returns:
- *	0	Success
- *	1	Busy - one or more old or new modifiers are down
- *	2	Failed - one or more new modifiers unacceptable
+ *	MappingSuccess (0)	Success
+ *	MappingBusy (1) 	Busy - one or more old or new modifiers are down
+ *	MappingFailed (2)	Failed - one or more new modifiers unacceptable
  */
 int
 XSetModifierMapping(
@@ -74,13 +79,11 @@ XSetModifierMapping(
     int         mapSize = modifier_map->max_keypermod << 3;	/* 8 modifiers */
 
     LockDisplay(dpy);
-    GetReqExtra(SetModifierMapping, mapSize, req);
-
+    GetReq(SetModifierMapping, req);
+    req->length += mapSize >> 2;
     req->numKeyPerModifier = modifier_map->max_keypermod;
 
-    memcpy((char *) NEXTPTR(req,xSetModifierMappingReq),
-	   (char *) modifier_map->modifiermap,
-	   mapSize);
+    Data(dpy, modifier_map->modifiermap, mapSize);
 
     (void) _XReply(dpy, (xReply *) & rep,
 	(SIZEOF(xSetModifierMappingReply) - SIZEOF(xReply)) >> 2, xTrue);
@@ -92,14 +95,14 @@ XSetModifierMapping(
 XModifierKeymap *
 XNewModifiermap(int keyspermodifier)
 {
-    XModifierKeymap *res = (XModifierKeymap *) Xmalloc((sizeof (XModifierKeymap)));
+    XModifierKeymap *res = Xmalloc((sizeof (XModifierKeymap)));
     if (res) {
 	res->max_keypermod = keyspermodifier;
 	res->modifiermap = (keyspermodifier > 0 ?
-			    (KeyCode *) Xmalloc((unsigned) (8 * keyspermodifier))
+			    Xmalloc(8 * keyspermodifier)
 			    : (KeyCode *) NULL);
 	if (keyspermodifier && (res->modifiermap == NULL)) {
-	    Xfree((char *) res);
+	    Xfree(res);
 	    return (XModifierKeymap *) NULL;
 	}
     }
@@ -112,8 +115,8 @@ XFreeModifiermap(XModifierKeymap *map)
 {
     if (map) {
 	if (map->modifiermap)
-	    Xfree((char *) map->modifiermap);
-	Xfree((char *) map);
+	    Xfree(map->modifiermap);
+	Xfree(map);
     }
     return 1;
 }

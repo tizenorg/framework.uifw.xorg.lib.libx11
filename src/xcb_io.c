@@ -19,8 +19,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+
+#ifdef _F_BLOCK_XINITTHREAD_BEFORE_XOPEN_
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <pthread.h>
 #endif
 
 #define xcb_fail_assert(_message, _var) { \
@@ -44,6 +52,11 @@
 	                "extension library\n"); \
 	xcb_fail_assert(_message, _var); \
 }
+
+#ifdef _F_BLOCK_XINITTHREAD_BEFORE_XOPEN_
+extern char process_name[300];
+extern Bool g_bThreadUnsafe;
+#endif
 
 static void return_socket(void *closure)
 {
@@ -253,11 +266,7 @@ static xcb_generic_reply_t *poll_for_event(Display *dpy)
 	assert(dpy->xcb->event_owner == XlibOwnsEventQueue && !dpy->xcb->event_waiter);
 
 	if(!dpy->xcb->next_event)
-#ifdef _F_REDUCE_SYSCALL
-		dpy->xcb->next_event = xcb_poll_for_queued_event(dpy->xcb->connection);
-#else
 		dpy->xcb->next_event = xcb_poll_for_event(dpy->xcb->connection);
-#endif
 
 	if(dpy->xcb->next_event)
 	{
@@ -271,6 +280,18 @@ static xcb_generic_reply_t *poll_for_event(Display *dpy)
 			if (XLIB_SEQUENCE_COMPARE(event_sequence, >,
 			                          dpy->request))
 			{
+#if (defined(_F_BLOCK_XINITTHREAD_BEFORE_XOPEN_) && defined(_F_XDEFAULT_ERR_LOG_ON_SERIAL_))
+				if (g_bThreadUnsafe) /*changes to identify application not calling XInitThread before XOpenDisplay */
+				{
+					FILE* fp = XGetFilePointer();
+					if (fp)
+					{
+						fprintf(fp,"\n[X_PRINT][X_INFORMATION][%s][Line :%d] XInitThreads not called by Process Name:%s ProcessId:%d ThreadId: %d before first XOpenDisplay call\n", __func__, __LINE__, process_name,getpid(), (pid_t)syscall(SYS_gettid));
+						fflush(fp);
+						fclose(fp);
+					}
+				}
+#endif
 				throw_thread_fail_assert("Unknown sequence "
 				                         "number while "
 							 "processing queue",
@@ -363,11 +384,6 @@ int _XEventsQueued(Display *dpy, int mode)
 	 * can reasonably claim there are no new events right now. */
 	if(!dpy->xcb->event_waiter)
 	{
-#ifdef _F_REDUCE_SYSCALL
-		if(!dpy->xcb->next_event)
-			dpy->xcb->next_event = xcb_poll_for_event(dpy->xcb->connection);
-#endif
-
 		while((response = poll_for_response(dpy)))
 			handle_response(dpy, response, False);
 		if(xcb_connection_has_error(dpy->xcb->connection))
@@ -463,7 +479,11 @@ void _XSend(Display *dpy, const char *data, long size)
 	static const xReq dummy_request;
 	static char const pad[3];
 	struct iovec vec[3];
+#ifdef _F_FIX_XIOERROR_
+	unsigned long requests;
+#else
 	uint64_t requests;
+#endif
 	_XExtension *ext;
 	xcb_connection_t *c = dpy->xcb->connection;
 	if(dpy->flags & XlibDisplayIOError)
@@ -479,8 +499,13 @@ void _XSend(Display *dpy, const char *data, long size)
 	if(dpy->xcb->event_owner != XlibOwnsEventQueue || dpy->async_handlers)
 	{
 		uint64_t sequence;
+#ifdef _F_FIX_XIOERROR_
+		for(sequence = dpy->xcb->last_flushed + 1; (unsigned long) sequence <= dpy->request; ++sequence)
+			append_pending_request(dpy, sequence);
+#else
 		for(sequence = dpy->xcb->last_flushed + 1; sequence <= dpy->request; ++sequence)
 			append_pending_request(dpy, sequence);
+#endif
 	}
 	requests = dpy->request - dpy->xcb->last_flushed;
 	dpy->xcb->last_flushed = dpy->request;
@@ -764,5 +789,21 @@ void _XReadPad(Display *dpy, char *data, long size)
 void _XEatData(Display *dpy, unsigned long n)
 {
 	dpy->xcb->reply_consumed += n;
+	_XFreeReplyData(dpy, False);
+}
+
+/*
+ * Read and discard "n" 32-bit words of data
+ * Matches the units of the length field in X protocol replies, and provides
+ * a single implementation of overflow checking to avoid having to replicate
+ * those checks in every caller.
+ */
+void _XEatDataWords(Display *dpy, unsigned long n)
+{
+	if (n < ((INT_MAX - dpy->xcb->reply_consumed) >> 2))
+		dpy->xcb->reply_consumed += (n << 2);
+	else
+		/* Overflow would happen, so just eat the rest of the reply */
+		dpy->xcb->reply_consumed = dpy->xcb->reply_length;
 	_XFreeReplyData(dpy, False);
 }

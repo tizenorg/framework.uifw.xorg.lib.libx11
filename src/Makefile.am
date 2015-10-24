@@ -210,6 +210,7 @@ libX11_la_SOURCES = \
                   ParseCmd.c \
                   ParseCol.c \
                   ParseGeom.c \
+                  pathmax.h \
                   PeekEvent.c \
                   PeekIfEv.c \
                   Pending.c \
@@ -331,10 +332,6 @@ if OS2
 libX11_la_SOURCES+=os2Stubs.c
 endif OS2
 
-if UDC
-libX11_la_SOURCES+=udcInf.c
-endif
-
 if THRSTUBS
 libX11_la_SOURCES+=UIThrStubs.c
 endif
@@ -345,7 +342,6 @@ x11data_DATA = XErrorDB
 EXTRA_DIST = \
 	$(x11data_DATA) \
 	os2Stubs.c \
-	udcInf.c \
 	UIThrStubs.c 
 
 libX11_xcb_la_SOURCES = x11_xcb.c Xxcbint.h
@@ -385,6 +381,7 @@ if LINT
 
 ALL_LINT_FLAGS=$(LINT_FLAGS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 		$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS)
+ALL_LINT_FLAGS += -DXCMSDIR=\"$(X11dir)\"
 
 lint:	$(BUILT_SOURCES)
 	for f in $(libX11_la_SOURCES) ; do \

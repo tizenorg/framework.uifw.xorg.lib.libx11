@@ -66,7 +66,7 @@ _XFreeIMFilters(
 
     while ((fl = display->im_filters)) {
         display->im_filters = fl->next;
-        Xfree((char *)fl);
+        Xfree(fl);
     }
 }
 
@@ -85,7 +85,7 @@ _XRegisterFilterByMask(
 {
     XFilterEventRec		*rec;
 
-    rec = (XFilterEventList)Xmalloc(sizeof(XFilterEventRec));
+    rec = Xmalloc(sizeof(XFilterEventRec));
     if (!rec)
 	return;
     rec->window = window;
@@ -117,7 +117,7 @@ _XRegisterFilterByType(
 {
     XFilterEventRec		*rec;
 
-    rec = (XFilterEventList)Xmalloc(sizeof(XFilterEventRec));
+    rec = Xmalloc(sizeof(XFilterEventRec));
     if (!rec)
 	return;
     rec->window = window;
@@ -148,7 +148,7 @@ _XUnregisterFilter(
 	if (fl->window == window &&
 	    fl->filter == filter && fl->client_data == client_data) {
 	    *prev = fl->next;
-	    Xfree((char *)fl);
+	    Xfree(fl);
 	} else
 	    prev = &fl->next;
     }

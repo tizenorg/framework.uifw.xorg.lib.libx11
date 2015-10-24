@@ -3,14 +3,14 @@
 
 Summary: Core X11 protocol client library
 Name: libX11
-Version: 1.5.0
-Release: 5
+Version: 1.6.2
+Release: 0
 License: MIT
 Group: System Environment/Libraries
 URL: http://www.x.org
 
 Source0: %{name}-%{version}.tar.gz
-
+Source1001: 	libX11.manifest
 BuildRequires:  pkgconfig(xcmiscproto)
 BuildRequires:  pkgconfig(bigreqsproto)
 BuildRequires:  pkgconfig(kbproto)
@@ -46,17 +46,19 @@ X.Org X11 libX11 development package
 
 %prep
 %setup -q
-
+cp %{SOURCE1001} .
 
 %build
 # sodding libtool
-autoreconf -v --install --force
+%if "%{?tizen_profile_name}" == "tv"
 %reconfigure --disable-static \
-           --enable-specs \
-           --enable-man-pages=3 \
-           --with-xcb=yes \
+           CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL -D_FIX_MEM_LEAK_ -D_F_XDEFAULT_ERR_LOG_ON_SERIAL_ -D_F_BLOCK_XINITTHREAD_BEFORE_XOPEN_ -D_F_FIX_XIOERROR_" \
+           LDFLAGS="${LDFLAGS} -Wl,--hash-style=both -Wl,--as-needed -lpthread"
+%else
+%reconfigure --disable-static \
            CFLAGS="${CFLAGS} -D_F_REDUCE_SYSCALL -D_FIX_MEM_LEAK_" \
            LDFLAGS="${LDFLAGS} -Wl,--hash-style=both -Wl,--as-needed"
+%endif
 
 make %{?jobs:-j%jobs}
 
@@ -85,6 +87,7 @@ rm -rf $RPM_BUILD_ROOT
 %postun -p /sbin/ldconfig
 
 %files
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 /usr/share/license/%{name}
 %{_libdir}/libX11.so.6
@@ -93,6 +96,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libX11-xcb.so.1.0.0
 
 %files common
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 /usr/share/license/%{name}-common
 #%doc AUTHORS COPYING README NEWS
@@ -100,6 +104,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/X11/XErrorDB
 
 %files devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/X11/ImUtil.h
 %{_includedir}/X11/XKBlib.h

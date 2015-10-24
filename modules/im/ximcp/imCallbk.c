@@ -92,17 +92,17 @@ typedef XimCbStatus (*XimCb)(
     (im->private.proto.read((im),(XPointer)(buf),(buf_len),&(len)))
 #define _XimFlushData(im) im->private.proto.flush((im))
 
-Private XimCbStatus _XimGeometryCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimStrConversionCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimPreeditStartCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimPreeditDoneCallback(Xim, Xic, char*, int);
-Private void _free_memory_for_text(XIMText*);
-Private XimCbStatus _XimPreeditDrawCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimPreeditCaretCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimStatusStartCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimStatusDoneCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimStatusDrawCallback(Xim, Xic, char*, int);
-Private XimCbStatus _XimPreeditStateNotifyCallback(Xim, Xic, char *, int);
+static XimCbStatus _XimGeometryCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimStrConversionCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimPreeditStartCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimPreeditDoneCallback(Xim, Xic, char*, int);
+static void _free_memory_for_text(XIMText*);
+static XimCbStatus _XimPreeditDrawCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimPreeditCaretCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimStatusStartCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimStatusDoneCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimStatusDrawCallback(Xim, Xic, char*, int);
+static XimCbStatus _XimPreeditStateNotifyCallback(Xim, Xic, char *, int);
 
 #if defined(__STDC__) && ((defined(sun) && defined(SVR4)) || defined(WIN32))
 #define RConst /**/
@@ -138,13 +138,13 @@ static RConst XimCb callback_table[] = {
     };
 
 
-Private Bool
+static Bool
 _XimIsReadyForProcess(Xic ic)
 {
     return(!ic->private.proto.waitCallback); /* check HM */
 }
 
-Private void
+static void
 _XimProcessPendingCallbacks(Xic ic)
 {
     XimPendingCallback pcbq;
@@ -161,7 +161,7 @@ _XimProcessPendingCallbacks(Xic ic)
     }
 }
 
-Private void
+static void
 _XimPutCbIntoQueue(Xic ic, XimPendingCallback call_data)
 {
     XimPendingCallback pcbq = ic->private.proto.pend_cb_que;
@@ -182,7 +182,7 @@ _XimPutCbIntoQueue(Xic ic, XimPendingCallback call_data)
     }
 }
 
-Public Bool
+Bool
 _XimCbDispatch(Xim xim,
 	       INT16 len,
 	       XPointer data,
@@ -230,9 +230,9 @@ _XimCbDispatch(Xim xim,
 	/* queue the protocol
 	 */
 	XimPendingCallback pcb;
-	char *proto_buf = (proto_len > 0) ? (char*)Xmalloc(proto_len) : NULL;
+	char *proto_buf = (proto_len > 0) ? Xmalloc(proto_len) : NULL;
 
-	pcb = (XimPendingCallback)Xmalloc(sizeof(XimPendingCallbackRec));
+	pcb = Xmalloc(sizeof(XimPendingCallbackRec));
 	if (pcb && (proto_len <= 0 || proto_buf)) {
 	    if (proto_len > 0)
 		memcpy(proto_buf, proto, proto_len);
@@ -261,7 +261,7 @@ _XimCbDispatch(Xim xim,
     return True;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimGeometryCallback(Xim im,
 		     Xic ic,
 		     char* proto,
@@ -284,7 +284,7 @@ _XimGeometryCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimStrConversionCallback(Xim im,
 			  Xic ic,
 			  char* proto,
@@ -339,7 +339,7 @@ _XimStrConversionCallback(Xim im,
 		2 + length_in_bytes +
 		XIM_PAD(2 + length_in_bytes) +
 		2 + 2 + sz_CARD32 * cbrec.text->length;
-	    buf = (CARD8*)Xmalloc(buf_len);
+	    buf = Xmalloc(buf_len);
 	}
 	_XimSetHeader((XPointer)buf, XIM_STR_CONVERSION_REPLY, 0, &buf_len);
 	buf_len -= XIM_HEADER_SIZE; /* added by _XimSetHeader (HACK) */
@@ -367,7 +367,7 @@ _XimStrConversionCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimPreeditStartCallback(Xim im,
 			 Xic ic,
 			 char* proto,
@@ -416,7 +416,7 @@ _XimPreeditStartCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimPreeditDoneCallback(Xim im,
 			Xic ic,
 			char* proto,
@@ -439,7 +439,7 @@ _XimPreeditDoneCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private void
+static void
 _read_text_from_packet(Xim im,
 		       char* buf,
 		       XIMText** text_ptr)
@@ -461,12 +461,12 @@ _read_text_from_packet(Xim im,
 	return;
     }
 
-    *text_ptr = text = (XIMText*)Xmalloc(sizeof(XIMText));
+    *text_ptr = text = Xmalloc(sizeof(XIMText));
     if (text == (XIMText*)NULL) return;
 
 	tmp_len = (int)*(CARD16*)buf;
 	buf += sz_CARD16;
-	if ((tmp_buf = (char*)Xmalloc(tmp_len + 1))) {
+	if ((tmp_buf = Xmalloc(tmp_len + 1))) {
 	    memcpy(tmp_buf, buf, tmp_len);
 	    tmp_buf[tmp_len] = '\0';
 
@@ -477,11 +477,10 @@ _read_text_from_packet(Xim im,
 	    if (s != XLookupNone) {
 #ifndef NO_DEC_I18N_FIX
                 /* Allow for NULL-terminated */
-                if ((text->string.multi_byte =
-                    (char*)Xmalloc(text->length *
+                if ((text->string.multi_byte = Xmalloc(text->length *
                       XLC_PUBLIC(im->core.lcd,mb_cur_max) + 1))) {
 #else
-		if (text->string.multi_byte = (char*)Xmalloc(text->length+1)) {
+		if (text->string.multi_byte = Xmalloc(text->length+1)) {
 #endif
 			int tmp;
 #ifndef NO_DEC_I18N_FIX
@@ -530,7 +529,7 @@ _read_text_from_packet(Xim im,
 
 	i = (int)*(CARD16*)buf; buf += sz_CARD16;
 	buf += sz_CARD16; /* skip `unused' */
-	text->feedback = (XIMFeedback*)Xmalloc(i*(sizeof(XIMFeedback)/sizeof(CARD32)));
+	text->feedback = Xmalloc(i*(sizeof(XIMFeedback)/sizeof(CARD32)));
 	j = 0;
 	while (i > 0) {
 	    text->feedback[j] = (XIMFeedback)*(CARD32*)buf;
@@ -554,7 +553,7 @@ _read_text_from_packet(Xim im,
     }
 }
 
-Private void
+static void
 _free_memory_for_text(XIMText* text)
 {
     if (text) {
@@ -566,7 +565,7 @@ _free_memory_for_text(XIMText* text)
     }
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimPreeditDrawCallback(Xim im,
 			Xic ic,
 			char* proto,
@@ -597,7 +596,7 @@ _XimPreeditDrawCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimPreeditCaretCallback(Xim im,
 			 Xic ic,
 			 char* proto,
@@ -649,7 +648,7 @@ _XimPreeditCaretCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimStatusStartCallback(Xim im,
 			Xic ic,
 			char* proto,
@@ -672,7 +671,7 @@ _XimStatusStartCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimStatusDoneCallback(Xim im,
 		       Xic ic,
 		       char* proto,
@@ -695,7 +694,7 @@ _XimStatusDoneCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimStatusDrawCallback(Xim im,
 		       Xic ic,
 		       char* proto,
@@ -730,7 +729,7 @@ _XimStatusDrawCallback(Xim im,
     return XimCbSuccess;
 }
 
-Private XimCbStatus
+static XimCbStatus
 _XimPreeditStateNotifyCallback( Xim im, Xic ic, char* proto, int len )
 {
     XICCallback	*cb = &ic->core.preedit_attr.state_notify_callback;

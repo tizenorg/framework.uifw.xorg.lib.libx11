@@ -72,7 +72,7 @@ PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 
-Private Bool
+static Bool
 _XimTransConnect(
     Xim			 im)
 {
@@ -122,7 +122,7 @@ _XimTransConnect(
 }
 
 
-Private Bool
+static Bool
 _XimTransShutdown(
     Xim im)
 {
@@ -142,7 +142,7 @@ _XimTransShutdown(
 
 
 
-Public Bool
+Bool
 _XimTransRegisterDispatcher(
     Xim				 im,
     Bool			 (*callback)(
@@ -153,7 +153,7 @@ _XimTransRegisterDispatcher(
     TransSpecRec		*spec = (TransSpecRec *)im->private.proto.spec;
     TransIntrCallbackPtr	 rec;
 
-    if (!(rec = (TransIntrCallbackPtr)Xmalloc(sizeof(TransIntrCallbackRec))))
+    if (!(rec = Xmalloc(sizeof(TransIntrCallbackRec))))
         return False;
 
     rec->func       = callback;
@@ -164,7 +164,7 @@ _XimTransRegisterDispatcher(
 }
 
 
-Public void
+void
 _XimFreeTransIntrCallback(
     Xim				 im)
 {
@@ -180,7 +180,7 @@ _XimFreeTransIntrCallback(
 }
 
 
-Public Bool
+Bool
 _XimTransCallDispatcher(Xim im, INT16 len, XPointer data)
 {
     TransSpecRec		*spec = (TransSpecRec *)im->private.proto.spec;
@@ -194,7 +194,7 @@ _XimTransCallDispatcher(Xim im, INT16 len, XPointer data)
 }
 
 
-Public Bool
+Bool
 _XimTransFilterWaitEvent(
     Display		*d,
     Window		 w,
@@ -209,7 +209,7 @@ _XimTransFilterWaitEvent(
 }
 
 
-Public void
+void
 _XimTransInternalConnection(
     Display		*d,
     int			 fd,
@@ -222,12 +222,20 @@ _XimTransInternalConnection(
 
     if (spec->is_putback)
 	return;
+
+    bzero(&ev, sizeof(ev));	/* FIXME: other fields may be accessed, too. */
     kev = (XKeyEvent *)&ev;
     kev->type = KeyPress;
     kev->send_event = False;
     kev->display = im->core.display;
     kev->window = spec->window;
     kev->keycode = 0;
+    kev->time = 0L;
+    kev->serial = LastKnownRequestProcessed(im->core.display);
+#if 0
+    fprintf(stderr,"%s,%d: putback FIXED kev->time=0 kev->serial=%lu\n", __FILE__, __LINE__, kev->serial);
+#endif
+
     XPutBackEvent(im->core.display, &ev);
     XFlush(im->core.display);
     spec->is_putback = True;
@@ -235,7 +243,7 @@ _XimTransInternalConnection(
 }
 
 
-Public Bool
+Bool
 _XimTransWrite(Xim im, INT16 len, XPointer data)
 {
     TransSpecRec	*spec	= (TransSpecRec *)im->private.proto.spec;
@@ -252,7 +260,7 @@ _XimTransWrite(Xim im, INT16 len, XPointer data)
 }
 
 
-Public Bool
+Bool
 _XimTransRead(
     Xim			 im,
     XPointer		 recv_buf,
@@ -273,7 +281,7 @@ _XimTransRead(
 }
 
 
-Public void
+void
 _XimTransFlush(
     Xim		 im)
 {
@@ -282,7 +290,7 @@ _XimTransFlush(
 
 
 
-Public Bool
+Bool
 _XimTransConf(
     Xim		   	 im,
     char	 	*address)
